@@ -4,7 +4,7 @@
  *
  * @package CommentToMail
  * @author Byends Upd.
- * @version 2.0.0
+ * @version 3.0.0beta
  * @link http://www.byends.com
  * @oriAuthor DEFE (http://defe.me)
  * 
@@ -25,6 +25,8 @@ class CommentToMail_Plugin implements Typecho_Plugin_Interface
     /** @var bool 请求适配器 */
     private static $_adapter    = false;
 
+    private static $_cacheFile = false;
+
     /**
      * 激活插件方法,如果激活失败,直接抛出异常
      *
@@ -34,6 +36,10 @@ class CommentToMail_Plugin implements Typecho_Plugin_Interface
      */
     public static function activate()
     {
+        if (!version_compare(PHP_VERSION, '5.5.0', '>=')) {
+            throw new Typecho_Plugin_Exception(_t('对不起, 只支持PHP>=5.5的版本'));
+        }
+
         if (false == self::isAvailable()) {
             throw new Typecho_Plugin_Exception(_t('对不起, 您的主机没有打开 allow_url_fopen 功能而且不支持 php-curl 扩展, 无法正常使用此功能'));
         }
@@ -138,6 +144,8 @@ class CommentToMail_Plugin implements Typecho_Plugin_Interface
         $titleForGuest = new Typecho_Widget_Helper_Form_Element_Text('titleForGuest',null,"您在 [{title}] 的评论有了回复",
                 _t('访客接收邮件标题'));
         $form->addInput($titleForGuest->addRule('required', _t('访客接收邮件标题 不能为空')));
+        $sckey = new Typecho_Widget_Helper_Form_Element_Text('sckey',null,"",_t('申请的SCKEY 留空表示不推送到微信 <a target="_blank" href="http://sc.ftqq.com/">申请地址</a>'));
+        $form->addInput($sckey);
     }
 
     /**
@@ -190,7 +198,8 @@ class CommentToMail_Plugin implements Typecho_Plugin_Interface
 
         $fileName = Typecho_Common::randString(7);
         $cfg      = (object)$cfg;
-        file_put_contents(dirname(__FILE__) . '/cache/' . $fileName, serialize($cfg));
+        self::$_cacheFile = dirname(__FILE__) . '/cache/' . $fileName;
+        file_put_contents(self::$_cacheFile, serialize($cfg));
         $url = ($options->rewrite) ? $options->siteUrl : $options->siteUrl . 'index.php';
         $url = rtrim($url, '/') . '/action/' . self::$action . '?send=' . $fileName;
 
@@ -209,71 +218,18 @@ class CommentToMail_Plugin implements Typecho_Plugin_Interface
      */
     public static function asyncRequest($url)
     {
-        self::isAvailable();
-        self::$_adapter == 'Socket' ? self::socket($url) : self::curl($url);
-    }
-
-    /**
-     * Socket 请求
-     * @param $url
-     * @return bool
-     */
-    public static function socket($url)
-    {
-        $params = parse_url($url);
-        $path = $params['path'] . '?' . $params['query'];
-        $host = $params['host'];
-        $port = 80;
-        $scheme = '';
-
-        if ('https' == $params['scheme']) {
-            $port = 443;
-            $scheme = 'ssl://';
-        }
-
-        if (function_exists('fsockopen')) {
-            $fp = @fsockopen ($scheme . $host, $port, $errno, $errstr, 30);
-        } elseif (function_exists('pfsockopen')) {
-            $fp = @pfsockopen ($scheme . $host, $port, $errno, $errstr, 30);
-        } else {
-            $fp = stream_socket_client($scheme . $host . ":$port", $errno, $errstr, 30);
-        }
-
-        if ($fp === false) {
-            self::saveLog("SOCKET错误," . $errno . ':' . $errstr);
-            return false;
-        }
-
-        $out = "GET " . $path . " HTTP/1.1\r\n";
-        $out .= "Host: $host\r\n";
-        $out .= "Connection: Close\r\n\r\n";
-
-        self::saveLog("Socket 方式发送\r\n");
-
-        fwrite($fp, $out);
-        sleep(1);
-        fclose($fp);
-        self::saveLog("请求结束\r\n");
-    }
-
-    /**
-     * Curl 请求
-     * @param $url
-     */
-    public static function curl($url)
-    {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_HTTPGET, 1);
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);  // 将curl_exec()获取的信息以文件流的形式返回,不直接输出。  
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);  // 连接等待时间  
-        curl_setopt($ch, CURLOPT_TIMEOUT, 1);         // curl允许执行时间
-        
-        self::saveLog("Curl 方式发送\r\n");
-        
-        curl_exec($ch);
-        curl_close($ch);
-        self::saveLog("请求结束\r\n");
+        require_once __DIR__ . '/vendor/autoload.php';
+        $client = new \GuzzleHttp\Client();
+        $promise = $client->requestAsync('GET', $url);
+        $promise->then(
+            function (\Psr\Http\Message\ResponseInterface $response) {
+                self::saveLog("异步请求成功\r\n");
+            },
+            function (\GuzzleHttp\Exception\RequestException $e) {
+                self::saveLog("异步异常 {$e->getMessage()}\r\n");
+            }
+        )->wait();
+        unlink(self::$_cacheFile);
     }
 
     /**

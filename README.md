@@ -14,6 +14,12 @@ Typecho 评论邮件提醒插件
 
 ### 升级日志
 
+##### 3.0.0beta Upgrade at 2016-12-07
+需要PHP >= 5.5
+- 增加微信推送（整合自[Comment2Wechat](https://github.com/YianAndCode/Comment2Wechat)）
+- 执行后删除缓存
+- 使用guzzle发送请求
+
 ##### 2.0.0 Upgrade at 2014-04-25
 
 版本要求：需要 Typecho `0.9 (13.12.12)`

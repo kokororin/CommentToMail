@@ -1,0 +1,17 @@
+2016-12-07 14:07:32 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=1OXUFmA
+2016-12-07 14:22:09 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=3VXhvj4
+2016-12-07 14:22:53 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=IgMZwau
+2016-12-07 14:26:20 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=6UMcduO
+异步发送成功
+2016-12-07 14:43:54 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=PKDfjVm
+异步请求成功
+2016-12-07 14:52:39 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=DTztQB2
+异步请求成功
+2016-12-07 14:53:19 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=mMJTiiQ
+异步请求成功
+2016-12-07 15:03:54 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=bHjeZuj
+异步请求成功
+2016-12-07 15:04:41 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=IUtjnzs
+异步请求成功
+2016-12-07 15:13:27 开始发送请求：http://localhost/typecho/index.php/action/comment-to-mail?send=Ulg8pLP
+异步请求成功

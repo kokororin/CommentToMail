@@ -80,7 +80,7 @@ class CommentToMail_Action extends Typecho_Widget implements Widget_Interface_Do
                 $this->_email->to = $this->_cfg->mail;
             }
 
-            $this->authorMail()->sendMail();
+            $this->authorMail()->pushWeChat()->sendMail();
         }
 
         //向访客发信
@@ -207,7 +207,7 @@ class CommentToMail_Action extends Typecho_Widget implements Widget_Interface_Do
     public function sendMail()
     {
         /** 载入邮件组件 */
-        require_once $this->_dir . '/lib/class.phpmailer.php';
+        require_once $this->_dir . '/vendor/autoload.php';
         $mailer = new PHPMailer();
         $mailer->CharSet = 'UTF-8';
         $mailer->Encoding = 'base64';
@@ -257,6 +257,25 @@ class CommentToMail_Action extends Typecho_Widget implements Widget_Interface_Do
         $mailer->ClearReplyTos();
 
         return $result;
+    }
+
+    public function pushWeChat() {
+        require_once $this->_dir . '/vendor/autoload.php';
+        $sckey = $this->_cfg->sckey;
+        if ($sckey == null || $sckey == '') {
+            return;
+        }
+        $client = new \GuzzleHttp\Client();
+        $request = new \GuzzleHttp\Psr7\Request(
+            'POST',
+            'http://sc.ftqq.com/' . $sckey . '.send',
+            ['Content-Type' => 'application/x-www-form-urlencoded'],
+            http_build_query([
+                'text' => '有人在您的博客发表了评论',
+                'desp' => "**" . $this->_email->author . "** 在你的博客中说：\n\n > " . $this->_email->text
+            ], null, '&'));
+        $client->sendAsync($request)->wait();
+        return $this;
     }
 
     /*
