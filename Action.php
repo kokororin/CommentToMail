@@ -107,7 +107,7 @@ class CommentToMail_Action extends Typecho_Widget implements Widget_Interface_Do
                 $this->_email->to             = $original['mail'];
                 $this->_email->originalText   = $original['text'];
                 $this->_email->originalAuthor = $original['author'];
-                $this->guestMail()->sendMail();
+                $this->guestMail()->pushWeChat()->sendMail();
             }
         }
 
@@ -263,8 +263,9 @@ class CommentToMail_Action extends Typecho_Widget implements Widget_Interface_Do
         require_once $this->_dir . '/vendor/autoload.php';
         $sckey = $this->_cfg->sckey;
         if ($sckey == null || $sckey == '') {
-            return;
+            return $this;
         }
+
         $client = new \GuzzleHttp\Client();
         $request = new \GuzzleHttp\Psr7\Request(
             'POST',
